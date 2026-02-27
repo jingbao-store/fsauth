@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: fsauth
+      POSTGRES_PASSWORD: fsauth_password
+      POSTGRES_DB: fsauth_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fsauth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: bundle exec puma -C config/puma.rb
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgresql://fsauth:fsauth_password@db:5432/fsauth_production
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      PUBLIC_HOST: ${PUBLIC_HOST}
+      FEISHU_APP_ID: ${FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET}
+    volumes:
+      - ./:/app
+      - bundle_cache:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  bundle_cache:

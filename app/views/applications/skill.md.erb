@@ -1,0 +1,169 @@
+# 飞书 OAuth 认证集成
+---
+name: fsauth
+description: 通过 fsauth 平台获取飞书用户 access token，用于调用飞书开放平台 API
+metadata: {"openclaw":{"emoji":"🔐","requires":{"config":["fsauth.app_id","fsauth.base_url"]}}}
+---
+
+## 获取飞书用户 Access Token
+
+当用户说「帮我获取飞书 token」、「登录飞书」或类似表达时，AI 应自动执行以下步骤：
+
+### 步骤 1: 创建授权请求
+
+```bash
+# 创建授权请求，获取 request_id 和授权 URL
+curl -X POST <%= request.base_url %>/api/v1/auth/request \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_id": "<%= @application.id %>"
+  }'
+```
+
+**响应示例：**
+```json
+{
+  "request_id": "req_abc123xyz",
+  "auth_url": "<%= request.base_url %>/auth/start?request_id=req_abc123xyz&app_id=<%= @application.id %>",
+  "expires_at": "2024-01-01T12:10:00Z"
+}
+```
+
+### 步骤 2: 打开浏览器完成授权
+
+AI 应引导用户：
+- 打开上一步返回的 `auth_url`
+- 在浏览器中完成飞书登录授权
+- 等待授权完成
+
+### 步骤 3: 轮询获取 Access Token
+
+```bash
+# 使用 request_id 轮询获取 token（每 2 秒查询一次）
+curl -X GET "<%= request.base_url %>/api/v1/auth/token?request_id=req_abc123xyz"
+```
+
+**状态说明：**
+
+1. **pending** - 等待用户授权
+   ```json
+   {"status": "pending", "message": "等待用户授权"}
+   ```
+   继续轮询
+
+2. **completed** - 授权成功
+   ```json
+   {
+     "status": "completed",
+     "token": "u-xxxxxxxxxxxxxx",
+     "user_info": {
+       "name": "张三",
+       "en_name": "Zhang San",
+       "avatar_url": "https://...",
+       "open_id": "ou_xxx",
+       "union_id": "on_xxx"
+     }
+   }
+   ```
+   返回 token 给用户
+
+3. **expired** - 请求已过期（10分钟超时）
+   ```json
+   {"status": "expired", "message": "授权请求已过期"}
+   ```
+   需要重新发起授权
+
+4. **failed** - 授权失败
+   ```json
+   {"status": "failed", "message": "用户拒绝授权"}
+   ```
+   通知用户失败原因
+
+## 完整示例（自动化流程）
+
+AI 可以执行以下 bash 脚本完成整个流程：
+
+```bash
+#!/bin/bash
+
+# 配置
+FSAUTH_BASE="<%= request.base_url %>"
+APP_ID="<%= @application.id %>"
+
+# 1. 创建授权请求
+echo "正在创建授权请求..."
+RESPONSE=$(curl -s -X POST "${FSAUTH_BASE}/api/v1/auth/request" \
+  -H "Content-Type: application/json" \
+  -d "{\"app_id\":\"${APP_ID}\"}")
+
+REQUEST_ID=$(echo $RESPONSE | grep -o '"request_id":"[^"]*' | cut -d'"' -f4)
+AUTH_URL=$(echo $RESPONSE | grep -o '"auth_url":"[^"]*' | cut -d'"' -f4)
+
+echo "请在浏览器中打开以下链接完成授权："
+echo "$AUTH_URL"
+echo ""
+
+# 2. 轮询获取 token
+echo "等待授权完成..."
+MAX_ATTEMPTS=150  # 5分钟（150 * 2秒）
+ATTEMPT=0
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+  RESULT=$(curl -s "${FSAUTH_BASE}/api/v1/auth/token?request_id=${REQUEST_ID}")
+  STATUS=$(echo $RESULT | grep -o '"status":"[^"]*' | cut -d'"' -f4)
+  
+  if [ "$STATUS" = "completed" ]; then
+    TOKEN=$(echo $RESULT | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+    USER_NAME=$(echo $RESULT | grep -o '"name":"[^"]*' | cut -d'"' -f4)
+    echo "✓ 授权成功！"
+    echo "  用户: $USER_NAME"
+    echo "  Access Token: $TOKEN"
+    echo ""
+    echo "现在可以使用此 token 调用飞书 API 了"
+    exit 0
+  elif [ "$STATUS" = "expired" ]; then
+    echo "✗ 授权请求已过期，请重新发起"
+    exit 1
+  elif [ "$STATUS" = "failed" ]; then
+    echo "✗ 授权失败"
+    exit 1
+  fi
+  
+  sleep 2
+  ATTEMPT=$((ATTEMPT + 1))
+done
+
+echo "✗ 授权超时，请重试"
+exit 1
+```
+
+## 应用信息
+
+- **应用名称**: <%= @application.name %>
+- **应用 ID**: `<%= @application.id %>`
+- **fsauth 平台**: <%= request.base_url %>
+
+## API 端点
+
+- **创建授权请求**: `POST <%= request.base_url %>/api/v1/auth/request`
+- **获取 Token**: `GET <%= request.base_url %>/api/v1/auth/token?request_id={request_id}`
+
+## 故障排除
+
+如果遇到问题：
+
+1. **授权 URL 无法访问**: 检查 fsauth 平台地址是否正确
+2. **轮询超时**: 确认用户已在浏览器中完成授权操作
+3. **Token 无效**: 检查应用配置是否正确，访问 <%= request.base_url %>/applications/<%= @application.id %>
+
+## 使用 Token 调用飞书 API
+
+获取到 `access_token` 后，可以调用飞书开放平台 API：
+
+```bash
+# 示例：获取用户信息
+curl -X GET "https://open.feishu.cn/open-apis/authen/v1/user_info" \
+  -H "Authorization: Bearer u-xxxxxxxxxxxxxx"
+```
+
+更多飞书 API 文档：https://open.feishu.cn/document/

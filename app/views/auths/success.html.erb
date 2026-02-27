@@ -1,0 +1,105 @@
+<div class="min-h-screen flex items-center justify-center bg-surface px-6 py-12">
+  <div class="w-full max-w-2xl">
+    <!-- Success Card -->
+    <div class="card card-elevated">
+      <!-- Header -->
+      <div class="card-header text-center border-b border-border pb-6">
+        <div class="flex items-center justify-center mb-4">
+          <div class="relative">
+            <div class="absolute inset-0 bg-success/20 rounded-full animate-ping"></div>
+            <%= lucide_icon "check-circle", class: "w-20 h-20 text-success relative" %>
+          </div>
+        </div>
+        <h1 class="font-mono text-3xl font-bold text-success mb-2">
+          授权成功
+        </h1>
+        <p class="font-sans text-secondary">
+          Authorization Completed
+        </p>
+      </div>
+      
+      <!-- Body -->
+      <div class="card-body space-y-6">
+        <!-- Success Message -->
+        <div class="bg-success-bg rounded-lg p-6 text-center space-y-3">
+          <p class="font-sans text-base text-primary">
+            您已成功完成飞书授权，访问令牌正在返回给本地应用
+          </p>
+        </div>
+        
+        <!-- Request Info -->
+        <div class="bg-surface-elevated rounded-lg p-6 space-y-4">
+          <div class="flex items-start space-x-3">
+            <%= lucide_icon "hash", class: "w-5 h-5 text-primary mt-0.5" %>
+            <div class="flex-1">
+              <h3 class="font-mono text-sm font-semibold text-primary mb-1">
+                请求 ID
+              </h3>
+              <p class="font-mono text-xs text-secondary break-all">
+                <%= @request_id %>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Next Steps -->
+        <div class="space-y-3">
+          <h3 class="font-mono text-lg font-semibold text-primary">
+            接下来
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start space-x-3">
+              <%= lucide_icon "arrow-right", class: "w-5 h-5 text-primary mt-0.5" %>
+              <div class="flex-1">
+                <p class="font-sans text-sm text-secondary">
+                  <strong class="text-primary">本地应用自动获取</strong><br>
+                  您的本地 openclaw 应用将自动接收到访问令牌
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start space-x-3">
+              <%= lucide_icon "shield-check", class: "w-5 h-5 text-success mt-0.5" %>
+              <div class="flex-1">
+                <p class="font-sans text-sm text-secondary">
+                  <strong class="text-primary">安全保护</strong><br>
+                  令牌已加密传输，fsauth 未保留任何副本
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start space-x-3">
+              <%= lucide_icon "x-circle", class: "w-5 h-5 text-muted mt-0.5" %>
+              <div class="flex-1">
+                <p class="font-sans text-sm text-secondary">
+                  <strong class="text-primary">可以关闭此页面</strong><br>
+                  授权流程已完成，您可以安全关闭此浏览器窗口
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Info Alert -->
+        <div class="alert-info">
+          <%= lucide_icon "info", class: "w-5 h-5 flex-shrink-0" %>
+          <div>
+            <p class="font-sans text-sm">
+              如果本地应用未能自动获取令牌，请检查应用日志或重新发起授权请求。
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="card-footer border-t border-border pt-6 text-center">
+        <a href="/" class="btn-primary btn-lg font-mono inline-flex items-center space-x-2">
+          <%= lucide_icon "home", class: "w-5 h-5" %>
+          <span>返回首页</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div data-controller="auth-callback" data-auth-callback-request-id-value="<%= @request_id %>"></div>

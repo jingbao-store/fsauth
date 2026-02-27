@@ -1,0 +1,58 @@
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+  <div class="mb-8">
+    <%= link_to applications_path, class: "text-muted hover:text-primary inline-flex items-center" do %>
+      <%= lucide_icon "arrow-left", class: "w-4 h-4 mr-2" %>
+      Back to Applications
+    <% end %>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold text-primary mb-6">Create New Application</h1>
+
+      <%= form_with model: @application, class: "space-y-6" do |f| %>
+        <% if @application.errors.any? %>
+          <div class="alert-error">
+            <h3 class="font-semibold mb-2"><%= pluralize(@application.errors.count, "error") %> prohibited this application from being saved:</h3>
+            <ul class="list-disc list-inside">
+              <% @application.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="form-group">
+          <%= f.label :name, "Application Name", class: "form-label" %>
+          <%= f.text_field :name, class: "form-input", placeholder: "My Feishu App", autofocus: true %>
+          <p class="form-hint">A friendly name to identify this application</p>
+        </div>
+
+        <div class="form-group">
+          <%= f.label :feishu_app_id, "Feishu App ID", class: "form-label" %>
+          <%= f.text_field :feishu_app_id, class: "form-input font-mono", placeholder: "cli_a1234567890abcde" %>
+          <p class="form-hint">Get this from your Feishu Open Platform application</p>
+        </div>
+
+        <div class="form-group">
+          <%= f.label :feishu_app_secret, "Feishu App Secret", class: "form-label" %>
+          <%= f.password_field :feishu_app_secret, class: "form-input font-mono", placeholder: "Enter your app secret" %>
+          <p class="form-hint">Keep this secret secure - never share it publicly</p>
+        </div>
+
+        <div class="alert-info">
+          <%= lucide_icon "info", class: "w-5 h-5 mr-2" %>
+          <div>
+            <p class="font-semibold mb-1">Next Steps:</p>
+            <p>After creating your application, you'll receive a redirect URL to configure in your Feishu application settings.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-3">
+          <%= f.submit "Create Application", class: "btn-primary" %>
+          <%= link_to "Cancel", applications_path, class: "btn-outline" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

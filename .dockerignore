@@ -1,0 +1,56 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+QUICKSTART.md
+docs/
+
+# Development files
+.env
+.env.local
+.env.*.local
+config/application.yml
+
+# Test files
+spec/
+test/
+coverage/
+
+# Logs
+log/*
+tmp/*
+*.log
+
+# Dependencies
+node_modules/
+.bundle/
+
+# Build artifacts
+app/assets/builds/
+public/assets/
+public/packs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Ruby files
+.ruby-version
+.ruby-gemset
+
+# Rails files
+storage/*
+tmp/storage/*
+tmp/cache/*
+
+# Examples
+examples/

@@ -1,0 +1,70 @@
+<div class="container mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-primary">My Applications</h1>
+      <p class="text-muted mt-2">Manage your Feishu OAuth applications</p>
+    </div>
+    <%= link_to new_application_path, class: "btn-primary" do %>
+      <%= lucide_icon "plus", class: "w-5 h-5 mr-2" %>
+      New Application
+    <% end %>
+  </div>
+
+  <% if @applications.any? %>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% @applications.each do |application| %>
+        <%= link_to application, class: "card hover:shadow-lg transition-shadow" do %>
+          <div class="card-body">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <%= lucide_icon "app-window", class: "w-6 h-6 text-primary" %>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-lg text-primary"><%= application.name %></h3>
+                  <p class="text-sm text-muted">ID: <%= application.id.first(8) %>...</p>
+                </div>
+              </div>
+              <% if application.credentials_configured? %>
+                <span class="badge-success">
+                  <%= lucide_icon "check-circle", class: "w-4 h-4 mr-1" %>
+                  Configured
+                </span>
+              <% else %>
+                <span class="badge-warning">
+                  <%= lucide_icon "alert-circle", class: "w-4 h-4 mr-1" %>
+                  Pending
+                </span>
+              <% end %>
+            </div>
+            
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center text-muted">
+                <%= lucide_icon "calendar", class: "w-4 h-4 mr-2" %>
+                Created <%= time_ago_in_words(application.created_at) %> ago
+              </div>
+              <% if application.feishu_app_id.present? %>
+                <div class="flex items-center text-muted">
+                  <%= lucide_icon "key", class: "w-4 h-4 mr-2" %>
+                  App ID: <%= application.feishu_app_id.first(12) %>...
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="card text-center py-16">
+      <div class="card-body">
+        <%= lucide_icon "inbox", class: "w-16 h-16 text-muted mx-auto mb-4" %>
+        <h3 class="text-xl font-semibold text-primary mb-2">No applications yet</h3>
+        <p class="text-muted mb-6">Create your first application to get started with Feishu OAuth</p>
+        <%= link_to new_application_path, class: "btn-primary inline-flex items-center" do %>
+          <%= lucide_icon "plus", class: "w-5 h-5 mr-2" %>
+          Create First Application
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,107 @@
+<div class="min-h-screen flex items-center justify-center bg-surface px-6 py-12">
+  <div class="w-full max-w-2xl">
+    <!-- Card -->
+    <div class="card card-elevated">
+      <!-- Header -->
+      <div class="card-header text-center border-b border-border pb-6">
+        <div class="flex items-center justify-center mb-4">
+          <%= lucide_icon "shield-check", class: "w-16 h-16 text-primary" %>
+        </div>
+        <h1 class="font-mono text-3xl font-bold text-primary mb-2">
+          飞书授权请求
+        </h1>
+        <p class="font-sans text-secondary">
+          fsauth Authorization Request
+        </p>
+      </div>
+      
+      <!-- Body -->
+      <div class="card-body space-y-6">
+        <!-- Request Info -->
+        <div class="bg-surface-elevated rounded-lg p-6 space-y-4">
+          <div class="flex items-start space-x-3">
+            <%= lucide_icon "info", class: "w-5 h-5 text-primary mt-0.5" %>
+            <div class="flex-1">
+              <h3 class="font-mono text-sm font-semibold text-primary mb-1">
+                请求 ID
+              </h3>
+              <p class="font-mono text-xs text-secondary break-all">
+                <%= @request_id %>
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex items-start space-x-3">
+            <%= lucide_icon "clock", class: "w-5 h-5 text-warning mt-0.5" %>
+            <div class="flex-1">
+              <h3 class="font-mono text-sm font-semibold text-primary mb-1">
+                有效期
+              </h3>
+              <p class="font-sans text-sm text-secondary">
+                此授权请求将在 <%= @auth_request.expires_at.strftime('%Y-%m-%d %H:%M:%S') %> 过期
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Description -->
+        <div class="space-y-3">
+          <h3 class="font-mono text-lg font-semibold text-primary">
+            授权说明
+          </h3>
+          <div class="space-y-2 font-sans text-sm text-secondary">
+            <p class="flex items-start space-x-2">
+              <%= lucide_icon "check-circle", class: "w-4 h-4 text-success mt-0.5 flex-shrink-0" %>
+              <span>您将被引导至飞书登录页面完成身份验证</span>
+            </p>
+            <p class="flex items-start space-x-2">
+              <%= lucide_icon "check-circle", class: "w-4 h-4 text-success mt-0.5 flex-shrink-0" %>
+              <span>授权完成后，访问令牌将立即返回给本地应用</span>
+            </p>
+            <p class="flex items-start space-x-2">
+              <%= lucide_icon "check-circle", class: "w-4 h-4 text-success mt-0.5 flex-shrink-0" %>
+              <span>fsauth 不会存储您的任何凭证信息</span>
+            </p>
+          </div>
+        </div>
+        
+        <!-- Warning -->
+        <div class="alert-info">
+          <%= lucide_icon "shield-alert", class: "w-5 h-5 flex-shrink-0" %>
+          <div>
+            <p class="font-sans text-sm">
+              <strong>安全提示：</strong>请确认此授权请求来自您信任的应用。授权后，该应用将可以访问您的飞书文档。
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="card-footer border-t border-border pt-6">
+        <%= form_with url: auth_authorize_path, method: :post, local: true, data: { turbo: false }, class: "space-y-4" do |f| %>
+          <%= hidden_field_tag :request_id, @request_id %>
+          <%= hidden_field_tag :app_id, @app_id %>
+          
+          <div class="flex flex-col sm:flex-row gap-3">
+            <%= f.submit "继续授权", class: "btn-primary btn-lg flex-1 font-mono" %>
+            <a href="/" class="btn-outline btn-lg flex-1 font-mono text-center">
+              取消
+            </a>
+          </div>
+          
+          <p class="font-sans text-xs text-muted text-center">
+            点击"继续授权"即表示您同意将飞书访问权限授予请求方应用
+          </p>
+        <% end %>
+      </div>
+    </div>
+    
+    <!-- Back to home -->
+    <div class="text-center mt-6">
+      <a href="/" class="font-sans text-sm text-secondary hover:text-primary transition-colors inline-flex items-center space-x-1">
+        <%= lucide_icon "arrow-left", class: "w-4 h-4" %>
+        <span>返回首页</span>
+      </a>
+    </div>
+  </div>
+</div>

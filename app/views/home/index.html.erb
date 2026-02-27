@@ -1,0 +1,341 @@
+<div>
+  <!-- Hero Section -->
+  <div class="relative min-h-screen flex items-center justify-center bg-surface overflow-hidden pt-24" data-testid="home-first-section">
+  <!-- Background decoration -->
+  <div class="absolute inset-0 bg-gradient-to-br from-primary/5 via-surface to-surface-elevated pointer-events-none"></div>
+  
+  <div class="relative z-10 w-full max-w-6xl mx-auto px-6 py-20">
+    <div class="text-center space-y-8">
+      <!-- Logo/Brand -->
+      <div class="inline-flex items-center justify-center space-x-3 mb-4">
+        <%= lucide_icon "shield-check", class: "w-16 h-16 text-primary" %>
+      </div>
+      
+      <!-- Heading -->
+      <h1 class="font-mono text-5xl md:text-6xl lg:text-7xl font-bold text-primary leading-tight">
+        fsauth
+      </h1>
+      
+      <!-- Subtitle -->
+      <p class="font-sans text-xl md:text-2xl text-secondary max-w-3xl mx-auto leading-relaxed">
+        飞书免登授权中间层 — 让本地 openclaw 安全访问飞书文档
+      </p>
+      
+      <!-- Description -->
+      <p class="font-sans text-base md:text-lg text-muted max-w-2xl mx-auto">
+        解决本地开发环境无法通过 HTTPS 完成飞书 OAuth 的痛点，提供可靠的授权中转服务
+      </p>
+      
+      <!-- CTA Buttons -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
+        <% if Current.user %>
+          <%= link_to applications_path, class: "btn-primary btn-lg inline-flex items-center" do %>
+            <%= lucide_icon "app-window", class: "w-5 h-5 mr-2" %>
+            My Applications
+          <% end %>
+          <%= link_to profile_path, class: "btn-outline btn-lg inline-flex items-center" do %>
+            <%= lucide_icon "user", class: "w-5 h-5 mr-2" %>
+            Profile
+          <% end %>
+        <% else %>
+          <%= link_to sign_in_path, class: "btn-primary btn-lg inline-flex items-center" do %>
+            <%= lucide_icon "log-in", class: "w-5 h-5 mr-2" %>
+            Sign In
+          <% end %>
+          <%= link_to sign_up_path, class: "btn-outline btn-lg inline-flex items-center" do %>
+            <%= lucide_icon "user-plus", class: "w-5 h-5 mr-2" %>
+            Sign Up
+          <% end %>
+        <% end %>
+      </div>
+      
+      <div class="text-center space-y-2 pt-4">
+        <p class="font-sans text-sm text-muted">
+          使用本地 openclaw 触发授权流程
+        </p>
+      </div>
+      
+      <!-- Visual Demo -->
+      <div class="mt-16 relative">
+        <div class="card card-elevated p-4 max-w-4xl mx-auto">
+          <img 
+            src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&h=600&fit=crop&q=80" 
+            alt="Developer workspace" 
+            class="w-full h-auto rounded-lg shadow-lg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="bg-surface-elevated py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <!-- Section Header -->
+    <div class="text-center mb-16">
+      <h2 class="font-mono text-4xl md:text-5xl font-bold text-primary mb-4">
+        工作原理
+      </h2>
+      <p class="font-sans text-lg text-secondary max-w-2xl mx-auto">
+        三步完成授权，简单高效，安全可靠
+      </p>
+    </div>
+    
+    <!-- Flow Steps -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Step 1 -->
+      <div class="card card-elevated p-8 hover:scale-105 transition-transform duration-300">
+        <div class="flex items-center justify-center w-16 h-16 rounded-lg bg-primary/10 mb-6 mx-auto">
+          <span class="font-mono text-2xl font-bold text-primary">01</span>
+        </div>
+        <div class="text-center space-y-4">
+          <%= lucide_icon "send", class: "w-12 h-12 text-primary mx-auto" %>
+          <h3 class="font-mono text-xl font-semibold text-primary">
+            本地发起请求
+          </h3>
+          <p class="font-sans text-secondary leading-relaxed">
+            openclaw 触发授权流程，生成唯一请求 ID，跳转到 fsauth Web 应用
+          </p>
+        </div>
+      </div>
+      
+      <!-- Step 2 -->
+      <div class="card card-elevated p-8 hover:scale-105 transition-transform duration-300">
+        <div class="flex items-center justify-center w-16 h-16 rounded-lg bg-primary/10 mb-6 mx-auto">
+          <span class="font-mono text-2xl font-bold text-primary">02</span>
+        </div>
+        <div class="text-center space-y-4">
+          <%= lucide_icon "shield-check", class: "w-12 h-12 text-primary mx-auto" %>
+          <h3 class="font-mono text-xl font-semibold text-primary">
+            完成飞书授权
+          </h3>
+          <p class="font-sans text-secondary leading-relaxed">
+            用户在 Web 端登录飞书账号，授权 fsauth 访问文档权限，获取 user_access_token
+          </p>
+        </div>
+      </div>
+      
+      <!-- Step 3 -->
+      <div class="card card-elevated p-8 hover:scale-105 transition-transform duration-300">
+        <div class="flex items-center justify-center w-16 h-16 rounded-lg bg-primary/10 mb-6 mx-auto">
+          <span class="font-mono text-2xl font-bold text-primary">03</span>
+        </div>
+        <div class="text-center space-y-4">
+          <%= lucide_icon "arrow-left-right", class: "w-12 h-12 text-primary mx-auto" %>
+          <h3 class="font-mono text-xl font-semibold text-primary">
+            返回 Token
+          </h3>
+          <p class="font-sans text-secondary leading-relaxed">
+            fsauth 即时将 token 返回给本地 openclaw，完成授权流程，不存储任何凭证
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Architecture Diagram -->
+    <div class="mt-16">
+      <div class="card card-elevated p-8 max-w-4xl mx-auto">
+        <img 
+          src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&h=400&fit=crop&q=80" 
+          alt="Architecture diagram" 
+          class="w-full h-auto rounded-lg"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="bg-surface py-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="font-mono text-4xl md:text-5xl font-bold text-primary mb-4">
+        核心特性
+      </h2>
+      <p class="font-sans text-lg text-secondary max-w-2xl mx-auto">
+        专为开发者设计的授权解决方案
+      </p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Feature 1 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "zap", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              即时返回
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              授权完成后立即返回 token，无需轮询或等待
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature 2 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "shield", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              零存储
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              不保留任何用户凭证或 token，仅做中转传递
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature 3 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "lock", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              HTTPS 加密
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              全程 HTTPS 通信，满足飞书 OAuth 安全要求
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature 4 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "clock", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              请求有效期
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              授权请求设置时效，过期自动失效
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature 5 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "activity", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              状态追踪
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              实时追踪授权状态，清晰的流程反馈
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Feature 6 -->
+      <div class="card p-6 hover:shadow-lg transition-all">
+        <div class="flex items-start space-x-4">
+          <div class="flex-shrink-0">
+            <%= lucide_icon "code", class: "w-8 h-8 text-primary" %>
+          </div>
+          <div>
+            <h3 class="font-mono text-lg font-semibold text-primary mb-2">
+              开发者友好
+            </h3>
+            <p class="font-sans text-secondary text-sm leading-relaxed">
+              简洁的 API 接口，完善的错误处理
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ Section -->
+<div class="bg-surface-elevated py-20">
+  <div class="max-w-4xl mx-auto px-6">
+    <div class="text-center mb-16">
+      <h2 class="font-mono text-4xl md:text-5xl font-bold text-primary mb-4">
+        常见问题
+      </h2>
+      <p class="font-sans text-lg text-secondary">
+        快速了解 fsauth
+      </p>
+    </div>
+    
+    <div class="space-y-6">
+      <!-- FAQ 1 -->
+      <div class="card p-6">
+        <h3 class="font-mono text-lg font-semibold text-primary mb-3">
+          <%= lucide_icon "help-circle", class: "w-5 h-5 inline-block mr-2" %>
+          为什么需要 fsauth？
+        </h3>
+        <p class="font-sans text-secondary leading-relaxed pl-7">
+          飞书 OAuth 要求回调地址必须是 HTTPS，本地开发环境（localhost）无法满足此要求。fsauth 作为云端中间层，提供 HTTPS 环境完成授权流程。
+        </p>
+      </div>
+      
+      <!-- FAQ 2 -->
+      <div class="card p-6">
+        <h3 class="font-mono text-lg font-semibold text-primary mb-3">
+          <%= lucide_icon "help-circle", class: "w-5 h-5 inline-block mr-2" %>
+          fsauth 是否会存储我的 token？
+        </h3>
+        <p class="font-sans text-secondary leading-relaxed pl-7">
+          不会。fsauth 仅作为授权中转，获取 token 后立即返回给本地应用，不进行任何持久化存储。
+        </p>
+      </div>
+      
+      <!-- FAQ 3 -->
+      <div class="card p-6">
+        <h3 class="font-mono text-lg font-semibold text-primary mb-3">
+          <%= lucide_icon "help-circle", class: "w-5 h-5 inline-block mr-2" %>
+          如何保证授权安全性？
+        </h3>
+        <p class="font-sans text-secondary leading-relaxed pl-7">
+          每次授权生成唯一请求 ID，设置有效期限，使用 HTTPS 加密传输，并且 token 即时返回不存储。
+        </p>
+      </div>
+      
+      <!-- FAQ 4 -->
+      <div class="card p-6">
+        <h3 class="font-mono text-lg font-semibold text-primary mb-3">
+          <%= lucide_icon "help-circle", class: "w-5 h-5 inline-block mr-2" %>
+          openclaw 如何接收返回的 token？
+        </h3>
+        <p class="font-sans text-secondary leading-relaxed pl-7">
+          openclaw 在发起授权时会启动本地监听服务，fsauth 授权完成后通过回调接口将 token 发送回 openclaw。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-surface py-12 border-t border-border">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="flex flex-col items-center justify-center space-y-4">
+      <!-- Logo -->
+      <div class="flex items-center space-x-2">
+        <%= lucide_icon "shield-check", class: "w-6 h-6 text-primary" %>
+        <span class="font-mono text-xl font-bold text-primary">fsauth</span>
+      </div>
+      
+      <!-- Copyright -->
+      <p class="font-sans text-sm text-muted text-center">
+        © <%= Time.current.year %> fsauth. 专为开发者打造的飞书授权中间层
+      </p>
+      </div>
+  </div>
+</footer>

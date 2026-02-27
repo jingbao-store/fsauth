@@ -1,0 +1,84 @@
+<div class="min-h-screen flex items-center justify-center bg-surface px-6 py-12">
+  <div class="w-full max-w-2xl">
+    <!-- Expired Card -->
+    <div class="card card-elevated">
+      <!-- Header -->
+      <div class="card-header text-center border-b border-border pb-6">
+        <div class="flex items-center justify-center mb-4">
+          <%= lucide_icon "clock-x", class: "w-20 h-20 text-warning" %>
+        </div>
+        <h1 class="font-mono text-3xl font-bold text-warning mb-2">
+          授权请求已过期
+        </h1>
+        <p class="font-sans text-secondary">
+          Authorization Request Expired
+        </p>
+      </div>
+      
+      <!-- Body -->
+      <div class="card-body space-y-6">
+        <!-- Error Message -->
+        <div class="alert-warning">
+          <%= lucide_icon "alert-triangle", class: "w-5 h-5 flex-shrink-0" %>
+          <div>
+            <p class="font-sans text-sm">
+              <strong>此授权请求已超过有效期限</strong><br>
+              为了安全起见，授权请求有效期为 10 分钟。当前请求已过期，无法继续完成授权流程。
+            </p>
+          </div>
+        </div>
+        
+        <!-- Next Steps -->
+        <div class="space-y-3">
+          <h3 class="font-mono text-lg font-semibold text-primary">
+            如何解决
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start space-x-3">
+              <%= lucide_icon "refresh-cw", class: "w-5 h-5 text-primary mt-0.5" %>
+              <div class="flex-1">
+                <p class="font-sans text-sm text-secondary">
+                  <strong class="text-primary">重新发起授权</strong><br>
+                  请返回本地 openclaw 应用，重新触发授权流程
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start space-x-3">
+              <%= lucide_icon "zap", class: "w-5 h-5 text-primary mt-0.5" %>
+              <div class="flex-1">
+                <p class="font-sans text-sm text-secondary">
+                  <strong class="text-primary">及时完成授权</strong><br>
+                  下次收到授权链接后，请在 10 分钟内完成授权流程
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Info -->
+        <div class="bg-surface-elevated rounded-lg p-6">
+          <div class="flex items-start space-x-3">
+            <%= lucide_icon "info", class: "w-5 h-5 text-primary mt-0.5" %>
+            <div class="flex-1">
+              <h4 class="font-mono text-sm font-semibold text-primary mb-2">
+                为什么设置有效期？
+              </h4>
+              <p class="font-sans text-sm text-secondary">
+                授权请求设置有效期可以防止授权链接被滥用，保护您的账号安全。每次授权都需要在有效期内完成。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="card-footer border-t border-border pt-6 text-center">
+        <a href="/" class="btn-primary btn-lg font-mono inline-flex items-center space-x-2">
+          <%= lucide_icon "home", class: "w-5 h-5" %>
+          <span>返回首页</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
