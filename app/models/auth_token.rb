@@ -15,6 +15,23 @@ class AuthToken < ApplicationRecord
     update!(used_at: Time.current)
   end
   
+  # Check if access token is expired
+  def access_token_expired?
+    return true if access_token_expires_at.nil?
+    access_token_expires_at < Time.current
+  end
+  
+  # Check if refresh token is expired
+  def refresh_token_expired?
+    return true if refresh_token_expires_at.nil?
+    refresh_token_expires_at < Time.current
+  end
+  
+  # Check if refresh token is available and valid
+  def can_refresh?
+    refresh_token.present? && !refresh_token_expired?
+  end
+  
   # Override auth_data getter to parse stored data
   def auth_data
     data = read_attribute(:auth_data)

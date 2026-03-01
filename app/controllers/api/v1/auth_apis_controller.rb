@@ -149,6 +149,80 @@ class Api::V1::AuthApisController < Api::BaseController
     render json: response_data
   end
 
+  # POST /api/v1/auth/refresh
+  # Refresh user_access_token using refresh_token
+  # Params: app_id (required), request_id (required)
+  def refresh_token
+    app_id = params[:app_id]
+    request_id = params[:request_id]
+    
+    unless app_id.present? && request_id.present?
+      render json: { error: 'app_id and request_id are required' }, status: :bad_request
+      return
+    end
+    
+    # Find application
+    application = Application.find_by(id: app_id)
+    unless application&.credentials_configured?
+      render json: { error: 'Invalid or unconfigured application' }, status: :bad_request
+      return
+    end
+    
+    # Find auth token
+    auth_token = AuthToken.find_by(request_id: request_id, application_id: application.id)
+    unless auth_token
+      render json: { error: 'Token not found for this request' }, status: :not_found
+      return
+    end
+    
+    # Check if refresh token is available
+    unless auth_token.can_refresh?
+      render json: { 
+        error: 'Refresh token expired or unavailable',
+        message: 'Please re-authorize via /api/v1/auth/request'
+      }, status: :unauthorized
+      return
+    end
+    
+    begin
+      # Initialize Feishu service with application credentials
+      service = FeishuAuthService.new(
+        app_id: application.feishu_app_id,
+        app_secret: application.feishu_app_secret
+      )
+      
+      # Refresh token
+      new_token_data = service.refresh_user_access_token(refresh_token: auth_token.refresh_token)
+      
+      # Calculate new expiration times
+      access_token_expires_at = new_token_data[:expires_in] ? Time.current + new_token_data[:expires_in].to_i.seconds : nil
+      refresh_token_expires_at = new_token_data[:refresh_token_expires_in] ? Time.current + new_token_data[:refresh_token_expires_in].to_i.seconds : nil
+      
+      # Update token in database
+      auth_token.update!(
+        token: new_token_data[:access_token],
+        refresh_token: new_token_data[:refresh_token],
+        access_token_expires_at: access_token_expires_at,
+        refresh_token_expires_at: refresh_token_expires_at
+      )
+      
+      # Return new token
+      render json: {
+        user_access_token: new_token_data[:access_token],
+        expires_in: new_token_data[:expires_in],
+        refresh_token_expires_in: new_token_data[:refresh_token_expires_in],
+        message: 'Token refreshed successfully'
+      }, status: :ok
+      
+    rescue => e
+      Rails.logger.error "Token refresh failed: #{e.message}"
+      render json: { 
+        error: 'Token refresh failed',
+        message: e.message
+      }, status: :unprocessable_entity
+    end
+  end
+
   private
   # Write your private methods here
 end

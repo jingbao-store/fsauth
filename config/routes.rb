@@ -74,6 +74,7 @@ Rails.application.routes.draw do
       post 'auth/request', to: 'auth_apis#create_request'
       get 'auth/token', to: 'auth_apis#get_token'
       get 'auth/status', to: 'auth_apis#get_status'
+      post 'auth/refresh', to: 'auth_apis#refresh_token'
     end
   end
 

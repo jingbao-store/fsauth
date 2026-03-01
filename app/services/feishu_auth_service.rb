@@ -63,4 +63,35 @@ class FeishuAuthService < ApplicationService
       raise "Failed to get user info: [#{error_code}] #{error_msg}"
     end
   end
+
+  # Refresh user access token
+  # https://open.feishu.cn/document/authentication-management/access-token/refresh-user-access-token
+  def refresh_user_access_token(refresh_token:)
+    url = 'https://open.feishu.cn/open-apis/authen/v2/oauth/token'
+    
+    response = HTTParty.post(url, {
+      headers: { 'Content-Type' => 'application/json' },
+      body: {
+        grant_type: 'refresh_token',
+        client_id: @app_id,
+        client_secret: @app_secret,
+        refresh_token: refresh_token
+      }.to_json
+    })
+    
+    if response.success? && response.parsed_response['code'] == 0
+      data = response.parsed_response
+      {
+        access_token: data['access_token'],
+        expires_in: data['expires_in'],
+        refresh_token: data['refresh_token'],
+        refresh_token_expires_in: data['refresh_token_expires_in']
+      }
+    else
+      error_msg = response.parsed_response['error_description'] || response.parsed_response['msg'] || 'Unknown error'
+      error_code = response.parsed_response['code'] || response.parsed_response['error']
+      Rails.logger.error "Feishu token refresh failed: code=#{error_code}, msg=#{error_msg}, response=#{response.body}"
+      raise "Failed to refresh token: [#{error_code}] #{error_msg}"
+    end
+  end
 end

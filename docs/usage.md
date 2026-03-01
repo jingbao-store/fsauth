@@ -130,6 +130,35 @@ curl -X GET https://open.feishu.cn/open-apis/authen/v1/user_info \
   -H "Authorization: Bearer u-7xxxxxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 
+#### 步骤 5: Token 刷新（可选）
+
+`user_access_token` 有过期时间（通常 7200 秒 / 2 小时），过期后可以使用 `refresh_token` 获取新的 token，无需用户重新授权。
+
+```bash
+curl -X POST https://your-fsauth-domain.com/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_id": "your-application-uuid",
+    "request_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+**响应示例：**
+```json
+{
+  "user_access_token": "u-8yyyyyyyyyyyyyyyyyyyyyyyyyy",
+  "expires_in": 7200,
+  "refresh_token_expires_in": 604800,
+  "message": "Token refreshed successfully"
+}
+```
+
+**注意事项：**
+- `refresh_token` 有效期通常为 365 天
+- 每次刷新会返回新的 `user_access_token` 和 `refresh_token`
+- 旧的 token 在刷新后立即失效（有 1 分钟宽限期）
+- 如果 `refresh_token` 过期，需要重新发起授权流程
+
 ### 方式二：手动测试
 
 适合开发调试或单次授权场景。
@@ -152,6 +181,7 @@ class FsauthClient:
     def __init__(self, fsauth_url, app_id):
         self.fsauth_url = fsauth_url.rstrip('/')
         self.app_id = app_id
+        self.request_id = None
     
     def authorize(self, timeout=300, poll_interval=2):
         """
@@ -172,7 +202,7 @@ class FsauthClient:
         response.raise_for_status()
         data = response.json()
         
-        request_id = data['request_id']
+        self.request_id = data['request_id']
         auth_url = data['auth_url']
         
         print(f"请在浏览器中完成授权: {auth_url}")
@@ -185,7 +215,7 @@ class FsauthClient:
         while time.time() - start_time < timeout:
             response = requests.get(
                 f"{self.fsauth_url}/api/v1/auth/token",
-                params={"request_id": request_id}
+                params={"request_id": self.request_id}
             )
             response.raise_for_status()
             result = response.json()
@@ -205,18 +235,49 @@ class FsauthClient:
             time.sleep(poll_interval)
         
         raise TimeoutError("授权超时")
+    
+    def refresh_token(self):
+        """
+        刷新 user_access_token
+        
+        Returns:
+            dict: 包含新的 access_token 的字典
+        """
+        if not self.request_id:
+            raise Exception("没有可用的 request_id，请先完成授权")
+        
+        response = requests.post(
+            f"{self.fsauth_url}/api/v1/auth/refresh",
+            json={
+                "app_id": self.app_id,
+                "request_id": self.request_id
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        return {
+            'access_token': data['user_access_token'],
+            'expires_in': data.get('expires_in'),
+            'refresh_token_expires_in': data.get('refresh_token_expires_in')
+        }
 
 # 使用示例
 if __name__ == "__main__":
     client = FsauthClient("https://your-fsauth-domain.com", "your-application-uuid")
     
     try:
+        # 首次授权
         result = client.authorize()
         print(f"Access Token: {result['access_token']}")
         print(f"User Info: {result['user_info']}")
         
         # 使用 token 调用飞书 API
         # ...
+        
+        # Token 过期后刷新
+        # refreshed = client.refresh_token()
+        # print(f"New Access Token: {refreshed['access_token']}")
         
     except Exception as e:
         print(f"授权失败: {e}")
@@ -232,6 +293,7 @@ class FsauthClient {
   constructor(fsauthUrl, appId) {
     this.fsauthUrl = fsauthUrl.replace(/\/$/, '');
     this.appId = appId;
+    this.requestId = null;
   }
   
   async authorize(timeout = 300000, pollInterval = 2000) {
@@ -240,7 +302,8 @@ class FsauthClient {
       app_id: this.appId
     });
     
-    const { request_id, auth_url } = data;
+    this.requestId = data.request_id;
+    const { auth_url } = data;
     console.log(`请在浏览器中完成授权: ${auth_url}`);
     
     // 2. 打开浏览器
@@ -250,7 +313,7 @@ class FsauthClient {
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
       const response = await axios.get(`${this.fsauthUrl}/api/v1/auth/token`, {
-        params: { request_id }
+        params: { request_id: this.requestId }
       });
       
       const result = response.data;
@@ -273,6 +336,23 @@ class FsauthClient {
     
     throw new Error('授权超时');
   }
+  
+  async refreshToken() {
+    if (!this.requestId) {
+      throw new Error('没有可用的 request_id，请先完成授权');
+    }
+    
+    const { data } = await axios.post(`${this.fsauthUrl}/api/v1/auth/refresh`, {
+      app_id: this.appId,
+      request_id: this.requestId
+    });
+    
+    return {
+      access_token: data.user_access_token,
+      expires_in: data.expires_in,
+      refresh_token_expires_in: data.refresh_token_expires_in
+    };
+  }
 }
 
 // 使用示例
@@ -280,12 +360,17 @@ class FsauthClient {
   const client = new FsauthClient('https://your-fsauth-domain.com', 'your-application-uuid');
   
   try {
+    // 首次授权
     const result = await client.authorize();
     console.log('Access Token:', result.access_token);
     console.log('User Info:', result.user_info);
     
     // 使用 token 调用飞书 API
     // ...
+    
+    // Token 过期后刷新
+    // const refreshed = await client.refreshToken();
+    // console.log('New Access Token:', refreshed.access_token);
     
   } catch (error) {
     console.error('授权失败:', error.message);
@@ -346,6 +431,36 @@ class FsauthClient {
 {
   "status": "completed|pending|expired|failed",
   "message": "状态描述"
+}
+```
+
+### POST /api/v1/auth/refresh
+
+刷新 user_access_token。
+
+**请求体：**
+```json
+{
+  "app_id": "your-application-uuid",  // 必需，应用 ID
+  "request_id": "uuid"                 // 必需，授权请求 ID
+}
+```
+
+**响应：**
+```json
+{
+  "user_access_token": "u-8yyyyyyyyyyyyyyyyyyyyyyyyyy",
+  "expires_in": 7200,
+  "refresh_token_expires_in": 604800,
+  "message": "Token refreshed successfully"
+}
+```
+
+**错误响应：**
+```json
+{
+  "error": "Refresh token expired or unavailable",
+  "message": "Please re-authorize via /api/v1/auth/request"
 }
 ```
 

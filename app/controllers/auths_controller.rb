@@ -138,14 +138,21 @@ class AuthsController < ApplicationController
       # Get user info
       user_info = service.get_user_info(access_token: token_data['access_token'])
       
+      # Calculate expiration times
+      access_token_expires_at = token_data['expires_in'] ? Time.current + token_data['expires_in'].to_i.seconds : nil
+      refresh_token_expires_at = token_data['refresh_token_expires_in'] ? Time.current + token_data['refresh_token_expires_in'].to_i.seconds : nil
+      
       # Store token and auth data
       auth_token = AuthToken.create!(
         application_id: application.id,
         request_id: request_id,
         token: token_data['access_token'],
+        refresh_token: token_data['refresh_token'],
+        access_token_expires_at: access_token_expires_at,
+        refresh_token_expires_at: refresh_token_expires_at,
         auth_data: {
-          refresh_token: token_data['refresh_token'],
           expires_in: token_data['expires_in'],
+          refresh_token_expires_in: token_data['refresh_token_expires_in'],
           user_info: user_info
         }
       )

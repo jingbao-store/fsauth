@@ -65,7 +65,11 @@ end
 **字段说明：**
 - `request_id` (string): 关联的授权请求 ID
 - `token` (text): 飞书返回的 user_access_token
+- `refresh_token` (text): 用于刷新 user_access_token 的凭证
+- `access_token_expires_at` (datetime): access_token 过期时间
+- `refresh_token_expires_at` (datetime): refresh_token 过期时间
 - `auth_data` (json): 用户信息（open_id, name 等）
+- `used_at` (datetime): token 首次被使用的时间
 
 ### 2. 控制器 (Controllers)
 
@@ -117,6 +121,12 @@ class Api::V1::AuthApisController < ApplicationController
   def get_status
     # 返回授权状态
   end
+  
+  # POST /api/v1/auth/refresh
+  def refresh_token
+    # 刷新 user_access_token
+    # 使用 refresh_token 获取新的 access_token
+  end
 end
 ```
 
@@ -147,6 +157,12 @@ class FeishuAuthService
   # 获取用户信息
   def get_user_info(access_token:)
     # 调用飞书 API 获取用户详情
+  end
+  
+  # 刷新 user_access_token
+  def refresh_user_access_token(refresh_token:)
+    # 调用飞书 API 刷新 token
+    # 返回新的 access_token 和 refresh_token
   end
 end
 ```
