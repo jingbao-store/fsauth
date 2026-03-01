@@ -9,6 +9,12 @@ cleanup_good_jobs:
   args:
     - "GoodJob::Job.finished.where('finished_at < ?', 1.day.ago).limit(1000).delete_all"
 
+# Auto-renew refresh_tokens before they expire
+refresh_token_renewal:
+  cron: "0 3 * * *"  # Every day at 3 AM
+  class: "RefreshTokenRenewalJob"
+  description: "Auto-renew expiring refresh_tokens (within 1 day)"
+
 # Example configurations:
 #
 # daily_report:
