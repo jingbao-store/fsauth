@@ -89,15 +89,11 @@ class FsauthClient:
         Returns:
             dict: 包含新的 access_token 的字典
         """
-        if not self.request_id:
-            raise Exception("没有可用的 request_id，请先完成授权")
-
         print("\n=== Refreshing access token ===")
         response = requests.post(
             f"{self.fsauth_url}/api/v1/auth/refresh",
             json={
-                "app_id": self.app_id,
-                "request_id": self.request_id
+                "app_id": self.app_id
             }
         )
         response.raise_for_status()

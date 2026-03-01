@@ -18,26 +18,27 @@ RSpec.describe 'Auth Token Refresh API', type: :request do
 
   describe 'POST /api/v1/auth/refresh' do
     context 'with valid parameters' do
-      it 'returns bad request when app_id or request_id is missing' do
-        post '/api/v1/auth/refresh', params: { app_id: application.id }
+      it 'returns bad request when app_id is missing' do
+        post '/api/v1/auth/refresh', params: {}
         expect(response).to have_http_status(:bad_request)
-        expect(JSON.parse(response.body)['error']).to eq('app_id and request_id are required')
+        expect(JSON.parse(response.body)['error']).to eq('app_id is required')
       end
 
-      it 'returns not found when application does not exist' do
-        post '/api/v1/auth/refresh', params: { app_id: 'invalid-id', request_id: auth_token.request_id }
+      it 'returns bad request when application does not exist' do
+        post '/api/v1/auth/refresh', params: { app_id: 'invalid-id' }
         expect(response).to have_http_status(:bad_request)
       end
 
       it 'returns not found when auth_token does not exist' do
-        post '/api/v1/auth/refresh', params: { app_id: application.id, request_id: 'invalid-request-id' }
+        post '/api/v1/auth/refresh', params: { app_id: application.id }
         expect(response).to have_http_status(:not_found)
+        expect(JSON.parse(response.body)['error']).to eq('No token found for this application')
       end
 
       it 'returns unauthorized when refresh_token is expired' do
         auth_token.update!(refresh_token_expires_at: 1.day.ago)
 
-        post '/api/v1/auth/refresh', params: { app_id: application.id, request_id: auth_token.request_id }
+        post '/api/v1/auth/refresh', params: { app_id: application.id }
         expect(response).to have_http_status(:unauthorized)
         expect(JSON.parse(response.body)['error']).to eq('Refresh token expired or unavailable')
       end
@@ -45,25 +46,28 @@ RSpec.describe 'Auth Token Refresh API', type: :request do
       it 'returns unauthorized when refresh_token is missing' do
         auth_token.update!(refresh_token: nil)
 
-        post '/api/v1/auth/refresh', params: { app_id: application.id, request_id: auth_token.request_id }
+        post '/api/v1/auth/refresh', params: { app_id: application.id }
         expect(response).to have_http_status(:unauthorized)
       end
     end
 
     context 'with mocked Feishu API' do
       before do
+        # Ensure auth_token exists
+        auth_token
+        
         # Mock FeishuAuthService refresh call
         allow_any_instance_of(FeishuAuthService).to receive(:refresh_user_access_token).and_return(
           access_token: 'new_access_token',
           expires_in: 7200,
           refresh_token: 'new_refresh_token',
-          refresh_token_expires_in: 604800
+          refresh_expires_in: 604800
         )
       end
 
-      it 'successfully refreshes token' do
+      it 'successfully refreshes token with only app_id' do
         post '/api/v1/auth/refresh', 
-             params: { app_id: application.id, request_id: auth_token.request_id },
+             params: { app_id: application.id },
              as: :json
 
         expect(response).to have_http_status(:ok)
@@ -81,13 +85,14 @@ RSpec.describe 'Auth Token Refresh API', type: :request do
 
     context 'when Feishu API fails' do
       before do
+        auth_token  # Ensure it exists
         allow_any_instance_of(FeishuAuthService).to receive(:refresh_user_access_token).and_raise(StandardError, 'Token refresh failed')
         allow(Rails.logger).to receive(:error)
       end
 
       it 'returns unprocessable entity' do
         post '/api/v1/auth/refresh',
-             params: { app_id: application.id, request_id: auth_token.request_id },
+             params: { app_id: application.id },
              as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)

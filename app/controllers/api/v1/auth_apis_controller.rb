@@ -94,11 +94,30 @@ class Api::V1::AuthApisController < Api::BaseController
       # Mark token as used
       auth_token.mark_as_used! unless auth_token.used?
       
-      # Return token and auth data
+      # Extract auth data
+      user_info = auth_token.auth_data['user_info'] || {}
+      
+      # Calculate time remaining until expiration (in seconds)
+      access_expires_in = if auth_token.access_token_expires_at
+        [(auth_token.access_token_expires_at - Time.current).to_i, 0].max
+      else
+        auth_token.auth_data['expires_in'] # Use original value if no timestamp
+      end
+      
+      refresh_expires_in = if auth_token.refresh_token_expires_at
+        [(auth_token.refresh_token_expires_at - Time.current).to_i, 0].max
+      else
+        auth_token.auth_data['refresh_expires_in']
+      end
+      
+      # Return standardized OAuth response format
       render json: {
         state: 'authorized',
         user_access_token: auth_token.token,
-        auth_data: auth_token.auth_data,
+        refresh_token: auth_token.refresh_token,
+        expires_in: access_expires_in,
+        refresh_token_expires_in: refresh_expires_in,
+        user_info: user_info,
         message: 'Authorization completed successfully'
       }, status: :ok
       
@@ -137,12 +156,32 @@ class Api::V1::AuthApisController < Api::BaseController
       expired: auth_request.expired?
     }
     
-    # If authorized, include token
+    # If authorized, include token and user info
     if auth_request.state == 'authorized'
       auth_token = AuthToken.find_by(request_id: request_id)
       if auth_token
-        response_data[:token] = auth_token.token
-        response_data[:auth_data] = auth_token.auth_data
+        user_info = auth_token.auth_data['user_info'] || {}
+        
+        # Calculate time remaining until expiration
+        access_expires_in = if auth_token.access_token_expires_at
+          [(auth_token.access_token_expires_at - Time.current).to_i, 0].max
+        else
+          auth_token.auth_data['expires_in']
+        end
+        
+        refresh_expires_in = if auth_token.refresh_token_expires_at
+          [(auth_token.refresh_token_expires_at - Time.current).to_i, 0].max
+        else
+          auth_token.auth_data['refresh_expires_in']
+        end
+        
+        response_data.merge!({
+          user_access_token: auth_token.token,
+          refresh_token: auth_token.refresh_token,
+          expires_in: access_expires_in,
+          refresh_token_expires_in: refresh_expires_in,
+          user_info: user_info
+        })
       end
     end
     
@@ -151,13 +190,12 @@ class Api::V1::AuthApisController < Api::BaseController
 
   # POST /api/v1/auth/refresh
   # Refresh user_access_token using refresh_token
-  # Params: app_id (required), request_id (required)
+  # Params: app_id (required)
   def refresh_token
     app_id = params[:app_id]
-    request_id = params[:request_id]
     
-    unless app_id.present? && request_id.present?
-      render json: { error: 'app_id and request_id are required' }, status: :bad_request
+    unless app_id.present?
+      render json: { error: 'app_id is required' }, status: :bad_request
       return
     end
     
@@ -168,10 +206,13 @@ class Api::V1::AuthApisController < Api::BaseController
       return
     end
     
-    # Find auth token
-    auth_token = AuthToken.find_by(request_id: request_id, application_id: application.id)
+    # Find auth token by application_id (one token per app)
+    auth_token = AuthToken.find_by(application_id: application.id)
     unless auth_token
-      render json: { error: 'Token not found for this request' }, status: :not_found
+      render json: { 
+        error: 'No token found for this application',
+        message: 'Please authorize first via /api/v1/auth/request'
+      }, status: :not_found
       return
     end
     
@@ -196,7 +237,7 @@ class Api::V1::AuthApisController < Api::BaseController
       
       # Calculate new expiration times
       access_token_expires_at = new_token_data[:expires_in] ? Time.current + new_token_data[:expires_in].to_i.seconds : nil
-      refresh_token_expires_at = new_token_data[:refresh_token_expires_in] ? Time.current + new_token_data[:refresh_token_expires_in].to_i.seconds : nil
+      refresh_token_expires_at = new_token_data[:refresh_expires_in] ? Time.current + new_token_data[:refresh_expires_in].to_i.seconds : nil
       
       # Update token in database
       auth_token.update!(
@@ -210,7 +251,7 @@ class Api::V1::AuthApisController < Api::BaseController
       render json: {
         user_access_token: new_token_data[:access_token],
         expires_in: new_token_data[:expires_in],
-        refresh_token_expires_in: new_token_data[:refresh_token_expires_in],
+        refresh_token_expires_in: new_token_data[:refresh_expires_in],
         message: 'Token refreshed successfully'
       }, status: :ok
       

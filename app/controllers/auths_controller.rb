@@ -89,7 +89,11 @@ class AuthsController < ApplicationController
       app_secret: application.feishu_app_secret,
       redirect_uri: application.redirect_url(base_url: request.base_url)
     )
-    redirect_to service.authorization_url(state: state), allow_other_host: true
+    
+    # IMPORTANT: Must include 'offline_access' scope to receive refresh_token
+    # bitable:app:readonly allows reading Bitable/Base data
+    # See: https://open.feishu.cn/document/authentication-management
+    redirect_to service.authorization_url(state: state, scope: 'bitable:app:readonly offline_access'), allow_other_host: true
   end
 
   # GET /auth/feishu/callback/:app_id
@@ -134,6 +138,7 @@ class AuthsController < ApplicationController
         redirect_uri: application.redirect_url(base_url: request.base_url)
       )
       token_data = service.exchange_code_for_token(code: code)
+      Rails.logger.debug "Feishu initial token response: #{token_data.inspect}"
       
       # Get user info
       user_info = service.get_user_info(access_token: token_data['access_token'])
@@ -143,19 +148,22 @@ class AuthsController < ApplicationController
       refresh_token_expires_at = token_data['refresh_token_expires_in'] ? Time.current + token_data['refresh_token_expires_in'].to_i.seconds : nil
       
       # Store token and auth data
-      auth_token = AuthToken.create!(
-        application_id: application.id,
-        request_id: request_id,
+      # Use find_or_initialize_by to ensure one token per application
+      auth_token = AuthToken.find_or_initialize_by(application_id: application.id)
+      auth_token.assign_attributes(
+        request_id: request_id,  # Keep for auditing/tracking
         token: token_data['access_token'],
         refresh_token: token_data['refresh_token'],
         access_token_expires_at: access_token_expires_at,
         refresh_token_expires_at: refresh_token_expires_at,
         auth_data: {
           expires_in: token_data['expires_in'],
-          refresh_token_expires_in: token_data['refresh_token_expires_in'],
+          refresh_expires_in: token_data['refresh_token_expires_in'],
           user_info: user_info
-        }
+        },
+        used_at: nil  # Reset used_at for new authorization
       )
+      auth_token.save!
       
       # Mark request as authorized
       auth_request.mark_as_authorized!

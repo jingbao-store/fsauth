@@ -147,6 +147,7 @@ exit 1
 
 - **创建授权请求**: `POST <%= request.base_url %>/api/v1/auth/request`
 - **获取 Token**: `GET <%= request.base_url %>/api/v1/auth/token?request_id={request_id}`
+- **刷新 Token**: `POST <%= request.base_url %>/api/v1/auth/refresh` (需要 app_id)
 
 ## 故障排除
 
@@ -167,3 +168,209 @@ curl -X GET "https://open.feishu.cn/open-apis/authen/v1/user_info" \
 ```
 
 更多飞书 API 文档：https://open.feishu.cn/document/
+
+## Token 刷新机制
+
+### 为什么需要刷新 Token？
+
+飞书的 `user_access_token` 有效期较短（通常 2 小时），过期后需要重新授权。为了避免频繁打开浏览器授权，fsauth 支持使用 `refresh_token` 自动刷新 access_token。
+
+### Token 生命周期
+
+- **access_token**: 2 小时有效期，用于调用飞书 API
+- **refresh_token**: 30 天有效期，用于刷新 access_token
+- **授权范围 (scope)**: 当前默认为 `bitable:app:readonly offline_access`
+  - `offline_access`: 必须，用于获得 refresh_token
+  - `bitable:app:readonly`: 允许读取飞书多维表格/Base 数据
+
+### 步骤 4: 刷新 Access Token
+
+当 `access_token` 即将过期或已过期时，使用以下 API 刷新：
+
+```bash
+curl -X POST <%= request.base_url %>/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_id": "<%= @application.id %>"
+  }'
+```
+
+**成功响应：**
+```json
+{
+  "user_access_token": "u-NEW_TOKEN_HERE",
+  "expires_in": 7200,
+  "refresh_token_expires_in": 2592000,
+  "message": "Token refreshed successfully"
+}
+```
+
+**错误响应：**
+
+1. **refresh_token 已过期**（需要重新授权）
+   ```json
+   {
+     "error": "Refresh token expired or unavailable",
+     "message": "Please re-authorize via /api/v1/auth/request"
+   }
+   ```
+   返回状态码：401 Unauthorized
+
+2. **刷新失败**
+   ```json
+   {
+     "error": "Token refresh failed",
+     "message": "详细错误信息"
+   }
+   ```
+   返回状态码：422 Unprocessable Entity
+
+### Token 刷新最佳实践
+
+#### 方案 1: 主动刷新（推荐）
+
+在 access_token 过期前 5 分钟主动刷新：
+
+```bash
+#!/bin/bash
+
+FSAUTH_BASE="<%= request.base_url %>"
+APP_ID="<%= @application.id %>"
+
+# 每隔 1.5 小时自动刷新一次（access_token 有效期 2 小时）
+while true; do
+  echo "Refreshing token at $(date)..."
+  
+  RESULT=$(curl -s -X POST "${FSAUTH_BASE}/api/v1/auth/refresh" \
+    -H "Content-Type: application/json" \
+    -d "{\"app_id\":\"${APP_ID}\"}")
+  
+  if echo "$RESULT" | grep -q "user_access_token"; then
+    NEW_TOKEN=$(echo $RESULT | grep -o '"user_access_token":"[^"]*' | cut -d'"' -f4)
+    echo "✓ Token refreshed: $NEW_TOKEN"
+  else
+    echo "✗ Refresh failed: $RESULT"
+    echo "Please re-authorize"
+    exit 1
+  fi
+  
+  # 等待 1.5 小时
+  sleep 5400
+done
+```
+
+#### 方案 2: 错误重试
+
+当调用飞书 API 返回 token 失效错误时，自动刷新并重试：
+
+```python
+import requests
+from datetime import datetime, timedelta
+
+class FeishuClient:
+    def __init__(self, fsauth_url, app_id):
+        self.fsauth_url = fsauth_url
+        self.app_id = app_id
+        self.access_token = None
+        self.token_expires_at = None
+    
+    def refresh_token(self):
+        """刷新 access_token"""
+        response = requests.post(
+            f"{self.fsauth_url}/api/v1/auth/refresh",
+            json={"app_id": self.app_id}
+        )
+        
+        if response.status_code == 401:
+            raise Exception("Refresh token expired, please re-authorize")
+        
+        response.raise_for_status()
+        data = response.json()
+        
+        self.access_token = data['user_access_token']
+        expires_in = data.get('expires_in', 7200)
+        self.token_expires_at = datetime.now() + timedelta(seconds=expires_in)
+        
+        return self.access_token
+    
+    def is_token_expired(self):
+        """检查 token 是否即将过期（提前 5 分钟）"""
+        if not self.token_expires_at:
+            return True
+        return datetime.now() >= (self.token_expires_at - timedelta(minutes=5))
+    
+    def call_feishu_api(self, endpoint, method='GET', **kwargs):
+        """调用飞书 API，自动处理 token 刷新"""
+        # 检查 token 是否即将过期
+        if self.is_token_expired():
+            print("Token expired, refreshing...")
+            self.refresh_token()
+        
+        # 调用飞书 API
+        headers = kwargs.pop('headers', {})
+        headers['Authorization'] = f'Bearer {self.access_token}'
+        
+        response = requests.request(
+            method, 
+            f"https://open.feishu.cn/open-apis/{endpoint}",
+            headers=headers,
+            **kwargs
+        )
+        
+        # 如果返回 token 失效，刷新后重试
+        if response.status_code == 401:
+            print("Token invalid, refreshing and retrying...")
+            self.refresh_token()
+            headers['Authorization'] = f'Bearer {self.access_token}'
+            response = requests.request(
+                method,
+                f"https://open.feishu.cn/open-apis/{endpoint}",
+                headers=headers,
+                **kwargs
+            )
+        
+        return response
+
+# 使用示例
+client = FeishuClient(
+    fsauth_url="<%= request.base_url %>",
+    app_id="<%= @application.id %>"
+)
+
+# 自动处理 token 刷新
+response = client.call_feishu_api('authen/v1/user_info')
+user_info = response.json()['data']
+print(f"User: {user_info['name']}")
+```
+
+### 完整的 Token 生命周期管理
+
+```mermaid
+graph TD
+    A[初次授权] -->|获得 access_token + refresh_token| B[使用 access_token 调用 API]
+    B --> C{Token 是否过期?}
+    C -->|未过期| B
+    C -->|即将过期| D[调用 /api/v1/auth/refresh]
+    D --> E{refresh_token 是否有效?}
+    E -->|有效| F[获得新的 access_token]
+    F --> B
+    E -->|已过期| G[重新授权]
+    G --> A
+```
+
+### Token 刷新 API 错误码
+
+| 状态码 | 错误 | 说明 | 解决方案 |
+|--------|------|------|----------|
+| 400 | app_id is required | 缺少必需参数 | 检查请求参数 |
+| 401 | Refresh token expired or unavailable | refresh_token 已过期 | 重新发起授权（步骤 1） |
+| 404 | No token found for this application | 找不到对应的 token 记录 | 需要先完成授权 |
+| 422 | Token refresh failed | 飞书 API 调用失败 | 查看错误详情，可能需要重新授权 |
+
+### 注意事项
+
+1. **一个 Application 一个 Token**: 每个应用只维护一个有效的 token，重新授权会更新现有记录
+2. **refresh_token 自动更新**: 每次刷新后会获得新的 refresh_token，旧的自动失效
+3. **并发刷新**: 避免多个进程同时刷新同一个 app 的 token，可能导致冲突
+4. **提前刷新**: 建议在 access_token 过期前 5-10 分钟刷新，避免 API 调用失败
+5. **错误重试**: 如果刷新失败返回 401，说明 refresh_token 已过期，需要重新授权
