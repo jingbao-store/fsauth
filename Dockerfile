@@ -33,6 +33,11 @@ RUN npm ci --production
 # Copy application code
 COPY . .
 
+# Set dummy SECRET_KEY_BASE for asset precompilation
+ENV SECRET_KEY_BASE_DUMMY=1 \
+    RAILS_ENV=production \
+    NODE_ENV=production
+
 # Compile assets
 RUN npm run build:css && \
     bundle exec rails assets:precompile
