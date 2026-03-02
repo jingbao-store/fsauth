@@ -1,44 +1,45 @@
-FROM ruby:3.3-alpine
+FROM ruby:3.3-slim
 
-# 安装依赖
-RUN apk add --no-cache \
-    build-base \
-    postgresql-dev \
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
     nodejs \
     npm \
     git \
-    tzdata
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# 设置工作目录
+# Set working directory
 WORKDIR /app
 
-# 复制 Gemfile
+# Copy Gemfile
 COPY Gemfile Gemfile.lock ./
 
-# 安装 Ruby 依赖
+# Install Ruby dependencies
 RUN bundle config set --local deployment 'true' && \
     bundle config set --local without 'development test' && \
-    bundle install
+    bundle install --jobs 4 --retry 3
 
-# 复制 package.json
+# Copy package.json
 COPY package.json package-lock.json ./
 
-# 安装 Node 依赖
+# Install Node dependencies
 RUN npm ci --production
 
-# 复制应用代码
+# Copy application code
 COPY . .
 
-# 编译资源
+# Compile assets
 RUN npm run build:css && \
     bundle exec rails assets:precompile
 
-# 暴露端口
+# Expose port
 EXPOSE 3000
 
-# 健康检查
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
   CMD curl -f http://localhost:3000/ || exit 1
 
-# 启动脚本
+# Start script
 CMD ["sh", "-c", "bundle exec rails db:migrate && bundle exec puma -C config/puma.rb"]

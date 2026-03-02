@@ -1,56 +1,40 @@
-# Git
+# Git files
 .git
 .gitignore
-
-# Documentation
-README.md
-QUICKSTART.md
-docs/
 
 # Development files
 .env
 .env.local
-.env.*.local
 config/application.yml
 
-# Test files
-spec/
-test/
-coverage/
-
-# Logs
+# Logs and temp files
 log/*
 tmp/*
-*.log
+storage/*
 
-# Dependencies
-node_modules/
-.bundle/
+# Test files
+spec
+test
+coverage
 
-# Build artifacts
-app/assets/builds/
-public/assets/
-public/packs/
+# Documentation
+README.md
+docs
+
+# Node modules (will be installed in container)
+node_modules
+
+# Editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
 
 # OS files
 .DS_Store
 Thumbs.db
 
-# Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Ruby files
-.ruby-version
-.ruby-gemset
-
-# Rails files
-storage/*
-tmp/storage/*
-tmp/cache/*
-
-# Examples
-examples/
+# Development dependencies
+.rubocop.yml
+.rspec
