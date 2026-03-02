@@ -49,5 +49,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
   CMD curl -f http://localhost:3000/ || exit 1
 
-# Start script
+# Start script - run migrations and start Puma
 CMD ["sh", "-c", "bundle exec rails db:migrate && bundle exec puma -C config/puma.rb"]
