@@ -1,7 +1,7 @@
 class Api::V1::AuthApisController < Api::BaseController
   # POST /api/v1/auth/request
   # Create a new auth request from openclaw
-  # Params: app_id (required), scope (optional)
+  # Params: app_id (required), scope (optional, array or string)
   def create_request
     app_id = params[:app_id]
     scope = params[:scope]
@@ -23,12 +23,27 @@ class Api::V1::AuthApisController < Api::BaseController
     
     # Create auth request (expires in 10 minutes)
     # Store scope if provided, ensure offline_access is always included
-    requested_scope = scope.presence || 'offline_access'
+    # Accept both array and string formats:
+    # - Array: ["bitable:app:readonly", "offline_access"]
+    # - String: "bitable:app:readonly offline_access"
+    scope_string = if scope.is_a?(Array)
+                     scope.join(' ')
+                   elsif scope.present?
+                     scope.to_s
+                   else
+                     'offline_access'
+                   end
+    
+    # Ensure offline_access is included
+    unless scope_string.include?('offline_access')
+      scope_string = "#{scope_string} offline_access".strip
+    end
+    
     auth_request = AuthRequest.create!(
       application_id: application.id,
       request_id: request_id,
       state: 'pending',
-      scope: requested_scope,
+      scope: scope_string,
       expires_at: 10.minutes.from_now
     )
     

@@ -388,20 +388,21 @@ class FsauthClient {
 ```json
 {
   "app_id": "your-application-uuid",  // 必需，应用 ID
-  "scope": "bitable:app:readonly offline_access"  // 可选，授权范围，默认为 offline_access
+  "scope": ["bitable:app:readonly", "offline_access"]  // 可选，授权范围数组，默认为 ["offline_access"]
 }
 ```
 
 **说明：**
 - `scope` 参数可选，用于指定需要的权限范围
 - `offline_access` 是必需的，用于获取 refresh_token
-- 如果不传 `scope`，默认只包含 `offline_access`
+- 如果不传 `scope`，默认只包含 `["offline_access"]`
 - 如果传了 `scope` 但没有包含 `offline_access`，系统会自动添加
+- 也支持字符串格式：`"bitable:app:readonly offline_access"`
 
 **常用 scope 示例：**
-- `offline_access`: 仅基础权限（默认）
-- `bitable:app:readonly offline_access`: 多维表格只读权限
-- `contact:contact.base:readonly offline_access`: 通讯录只读权限
+- `["offline_access"]`: 仅基础权限（默认）
+- `["bitable:app:readonly", "offline_access"]`: 多维表格只读权限
+- `["contact:contact.base:readonly", "offline_access"]`: 通讯录只读权限
 
 **响应：**
 ```json

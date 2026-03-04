@@ -16,9 +16,21 @@ metadata: {"openclaw":{"emoji":"🔐","requires":{"config":["fsauth.app_id","fsa
 curl -X POST <%= request.base_url %>/api/v1/auth/request \
   -H "Content-Type: application/json" \
   -d '{
-    "app_id": "<%= @application.id %>"
+    "app_id": "<%= @application.id %>",
+    "scope": ["bitable:app:readonly", "offline_access"]  # 可选，默认为 ["offline_access"]
   }'
 ```
+
+**参数说明：**
+- `app_id`（必需）：应用 ID
+- `scope`（可选）：OAuth 授权范围数组
+  - 默认值：`["offline_access"]`（获取 refresh_token 必需）
+  - 系统会自动确保 `offline_access` 始终包含在授权范围中
+  - 也支持字符串格式：`"bitable:app:readonly offline_access"`
+  - 常用值：
+    - `["offline_access"]`：仅基础权限
+    - `["bitable:app:readonly", "offline_access"]`：多维表格只读权限
+    - `["contact:contact.base:readonly", "offline_access"]`：通讯录只读权限
 
 **响应示例：**
 ```json
@@ -92,6 +104,7 @@ APP_ID="<%= @application.id %>"
 
 # 1. 创建授权请求
 echo "正在创建授权请求..."
+# 可以指定 scope 参数（数组格式），例如：{\"app_id\":\"${APP_ID}\",\"scope\":[\"bitable:app:readonly\",\"offline_access\"]}
 RESPONSE=$(curl -s -X POST "${FSAUTH_BASE}/api/v1/auth/request" \
   -H "Content-Type: application/json" \
   -d "{\"app_id\":\"${APP_ID}\"}")
@@ -179,9 +192,10 @@ curl -X GET "https://open.feishu.cn/open-apis/authen/v1/user_info" \
 
 - **access_token**: 2 小时有效期，用于调用飞书 API
 - **refresh_token**: 30 天有效期，用于刷新 access_token
-- **授权范围 (scope)**: 当前默认为 `bitable:app:readonly offline_access`
-  - `offline_access`: 必须，用于获得 refresh_token
+- **授权范围 (scope)**: 可通过 API 配置，默认为 `offline_access`
+  - `offline_access`: 必须，用于获得 refresh_token（系统自动确保包含）
   - `bitable:app:readonly`: 允许读取飞书多维表格/Base 数据
+  - 其他权限范围请参考飞书开放平台文档
 
 ### 步骤 4: 刷新 Access Token
 
