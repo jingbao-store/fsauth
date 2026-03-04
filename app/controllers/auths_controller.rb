@@ -90,10 +90,10 @@ class AuthsController < ApplicationController
       redirect_uri: application.redirect_url(base_url: request.base_url)
     )
     
-    # IMPORTANT: Must include 'offline_access' scope to receive refresh_token
-    # bitable:app:readonly allows reading Bitable/Base data
-    # See: https://open.feishu.cn/document/authentication-management
-    redirect_to service.authorization_url(state: state, scope: 'bitable:app:readonly offline_access'), allow_other_host: true
+    # Use scope from auth_request, ensure offline_access is always included
+    # The FeishuAuthService will automatically add offline_access if not present
+    requested_scope = auth_request.scope.presence || 'offline_access'
+    redirect_to service.authorization_url(state: state, scope: requested_scope), allow_other_host: true
   end
 
   # GET /auth/feishu/callback/:app_id

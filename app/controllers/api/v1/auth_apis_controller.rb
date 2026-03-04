@@ -1,9 +1,10 @@
 class Api::V1::AuthApisController < Api::BaseController
   # POST /api/v1/auth/request
   # Create a new auth request from openclaw
-  # Params: app_id (required)
+  # Params: app_id (required), scope (optional)
   def create_request
     app_id = params[:app_id]
+    scope = params[:scope]
 
     unless app_id.present?
       render json: { error: 'app_id is required' }, status: :bad_request
@@ -21,10 +22,13 @@ class Api::V1::AuthApisController < Api::BaseController
     request_id = SecureRandom.uuid
     
     # Create auth request (expires in 10 minutes)
+    # Store scope if provided, ensure offline_access is always included
+    requested_scope = scope.presence || 'offline_access'
     auth_request = AuthRequest.create!(
       application_id: application.id,
       request_id: request_id,
       state: 'pending',
+      scope: requested_scope,
       expires_at: 10.minutes.from_now
     )
     

@@ -112,7 +112,7 @@ curl "https://your-fsauth.com/api/v1/auth/token?request_id=xxx"
 
 | 端点 | 方法 | 说明 | 必需参数 |
 |------|------|------|---------|
-| `/api/v1/auth/request` | POST | 创建授权请求 | `app_id` |
+| `/api/v1/auth/request` | POST | 创建授权请求 | `app_id` (可选: `scope`) |
 | `/api/v1/auth/token` | GET | 获取授权 token | `request_id` |
 | `/api/v1/auth/status` | GET | 查询授权状态 | `request_id` |
 
